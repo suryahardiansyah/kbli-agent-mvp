@@ -1,4 +1,4 @@
-# KBLI Agent MVP
+# KBLI Agent (Minimum Viable Product) MVP
 
 ---
 
