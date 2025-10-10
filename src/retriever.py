@@ -1,43 +1,43 @@
 import os
-import json
-import torch
+import numpy as np
 from sentence_transformers import SentenceTransformer, util
+from loader_bps import load_or_fetch_kbli
 
-MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-print(f"[INFO] Loading model: {MODEL_NAME}")
-model = SentenceTransformer(MODEL_NAME)
+model_name = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+print(f"[INFO] Loading model: {model_name}")
+model = SentenceTransformer(model_name)
 
-DATA_PATH = os.path.join("docs", "kbli_2020.json")
-CACHE_PATH = "kbli_embeddings.pt"
+# === LOAD DATA FROM BPS ===
+KBLI_DATA = load_or_fetch_kbli()
+print(f"[INFO] Loaded {len(KBLI_DATA)} KBLI entries from BPS WebAPI.")
 
-def load_kbli_data():
-    if not os.path.exists(DATA_PATH):
-        raise FileNotFoundError(f"File {DATA_PATH} tidak ditemukan. Pastikan sudah ada.")
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    print(f"[INFO] Loaded {len(data)} entri KBLI.")
-    return data
+EMBED_CACHE = "data/kbli_embeddings_bps.npy"
 
-KBLI_DATA = load_kbli_data()
+if os.path.exists(EMBED_CACHE):
+    print("[INFO] Loading cached embeddings...")
+    EMBEDDINGS = np.load(EMBED_CACHE)
+else:
+    print("[INFO] Creating new embeddings cache...")
+    texts = [f"{row['judul']} {row['deskripsi']}" for row in KBLI_DATA]
+    EMBEDDINGS = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+    np.save(EMBED_CACHE, EMBEDDINGS)
+    print("[INFO] Embeddings cached from BPS data.")
 
-def get_embeddings():
-    if os.path.exists(CACHE_PATH):
-        print("[INFO] Loading cached embeddings...")
-        return torch.load(CACHE_PATH)
-    print("[INFO] Encoding KBLI data (sekali saja, agak lama)...")
-    embeddings = model.encode([x["deskripsi"] for x in KBLI_DATA], convert_to_tensor=True)
-    torch.save(embeddings, CACHE_PATH)
-    return embeddings
-
-KBLI_EMB = get_embeddings()
-
-def retrieve_kbli(query, top_k=3):
-    print(f"[DEBUG] Query masuk: {query}")
-    if not query.strip():
-        return []
+def retrieve_kbli(query, top_k=5):
     query_emb = model.encode(query, convert_to_tensor=True)
-    cos_scores = util.pytorch_cos_sim(query_emb, KBLI_EMB)[0]
-    top_results = cos_scores.topk(k=min(top_k, len(KBLI_DATA)))
-    results = [(float(cos_scores[i]), KBLI_DATA[i]) for i in top_results[1]]
-    print(f"[DEBUG] Hasil retrieve: {results}")
-    return results
+    cosine_scores = util.cos_sim(query_emb, EMBEDDINGS)[0]
+
+    results = []
+    for i, score in enumerate(cosine_scores):
+        entry = KBLI_DATA[i]
+        results.append((float(score), entry))
+
+    return sorted(results, key=lambda x: x[0], reverse=True)[:top_k]
+
+'''
+If someday you want to refresh the cache (for example, when BPS announces new KBLI),
+you can just run:
+
+python -c "from bps_loader import load_kbli_from_cache; load_kbli_from_cache(force_refresh=True)"
+
+'''
