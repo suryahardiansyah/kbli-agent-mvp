@@ -1,4 +1,47 @@
-# KBLI Agent MVP
+# KBLI Agent (Minimum Viable Product) MVP
+
+---
+
+## Disclaimer / Penjelasan
+
+### English
+This project, **KBLI Agent MVP**, is an independent and unofficial prototype.  
+It was created solely for educational and research purposes to explore how AI Agents can assist with business classification according to **KBLI (Klasifikasi Baku Lapangan Usaha Indonesia)**.
+
+The dataset used in this prototype was obtained from the **official SIBAKU Mobile app** developed by **Badan Pusat Statistik (BPS)**, which is publicly available for free download on Google Play Store.  
+All KBLI information in the app can also be found in official BPS publications (for example, the KBLI 2020 PDF on the Sirusa BPS website).
+
+**How the database was obtained**
+1. Download the official **SIBAKU Mobile** app from the Google Play Store  
+2. Use an **APK extractor** (for example, from your Android device) to extract the `.apk` file  
+3. Open the APK using 7zip or WinRAR  
+4. Locate the file `baku.db` included in the app’s internal data  
+5. Use the database structure locally for AI experimentation (no decryption, modification, or redistribution)
+
+This project does not provide any guarantee.  
+The owner of this repository accepts no liability for the quality, completeness, or accuracy of the data.  
+All rights to the original dataset belong to **Badan Pusat Statistik (BPS)**.
+
+---
+
+### Bahasa Indonesia
+Proyek ini, **KBLI Agent MVP**, merupakan prototipe independen dan tidak resmi.  
+Tujuan utamanya adalah untuk keperluan pembelajaran dan riset, yaitu mengeksplorasi bagaimana AI Agent dapat membantu pengklasifikasian usaha berdasarkan **KBLI (Klasifikasi Baku Lapangan Usaha Indonesia)**.
+
+Dataset yang digunakan dalam prototipe ini diperoleh dari **aplikasi resmi SIBAKU Mobile** yang dikembangkan oleh **Badan Pusat Statistik (BPS)**, dan dapat diunduh secara gratis oleh publik melalui Google Play Store.  
+Seluruh informasi KBLI yang terdapat di dalam aplikasi juga tersedia dalam publikasi resmi BPS seperti **PDF KBLI 2020** di situs Sirusa BPS.
+
+**Cara memperoleh database**
+1. Unduh aplikasi resmi **SIBAKU Mobile** dari Google Play Store  
+2. Gunakan **APK Extractor** (misalnya dari perangkat Android) untuk mengekstrak file `.apk`  
+3. Buka file APK menggunakan 7zip atau WinRAR  
+4. Temukan file `baku.db` di dalam folder data aplikasi  
+5. Gunakan struktur database ini secara lokal untuk eksperimen AI (tanpa dekripsi, modifikasi, atau redistribusi)
+
+Proyek ini tidak memberikan jaminan apa pun.  
+Pemilik repositori tidak bertanggung jawab atas kualitas, kelengkapan, atau akurasi data yang disediakan.  
+Seluruh hak atas dataset asli dimiliki oleh **Badan Pusat Statistik (BPS)**.
+
 
 ## Deskripsi Singkat / Short Description
 AI Agent untuk membantu petugas atau pengguna menentukan klasifikasi **KBLI (Klasifikasi Baku Lapangan Usaha Indonesia)** berdasarkan deskripsi usaha atau pekerjaan secara alami.  
