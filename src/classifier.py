@@ -1,6 +1,6 @@
-from retriever import retrieve_kbli
-from context_detector import detect_context
-from hierarchy import format_hierarchy
+from src.retriever import retrieve_kbli
+from src.context_detector import detect_context
+from src.hierarchy import format_hierarchy
 
 def format_for_chat(result): 
     """ Format hasil klasifikasi agar tampil informatif seperti chatbot WhatsApp. """ 

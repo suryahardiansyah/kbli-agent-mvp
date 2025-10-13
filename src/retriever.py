@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
-from loader_bps import load_kbli_from_cache
+from src.loader_bps import load_kbli_from_cache
 
 model_name = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 print(f"[INFO] Loading model: {model_name}")

@@ -1,5 +1,5 @@
 import gradio as gr
-from classifier import classify_query
+from src.classifier import classify_query
 
 def classify_interface(query):
     try:

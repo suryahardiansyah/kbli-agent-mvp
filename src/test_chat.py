@@ -1,4 +1,4 @@
-from classifier import classify_query, format_for_chat
+from src.classifier import classify_query, format_for_chat
 
 print("=== KBLI Agent CLI Chat ===")
 while True:
