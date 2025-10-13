@@ -1,14 +1,14 @@
 import os
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
-from loader_bps import load_or_fetch_kbli
+from loader_bps import load_kbli_from_cache
 
 model_name = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 print(f"[INFO] Loading model: {model_name}")
 model = SentenceTransformer(model_name)
 
 # === LOAD DATA FROM BPS ===
-KBLI_DATA = load_or_fetch_kbli()
+KBLI_DATA = load_kbli_from_cache()
 print(f"[INFO] Loaded {len(KBLI_DATA)} KBLI entries from BPS WebAPI.")
 
 EMBED_CACHE = "data/kbli_embeddings_bps.npy"
