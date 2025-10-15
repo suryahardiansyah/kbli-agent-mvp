@@ -1,0 +1,18 @@
+# 1) WAHA (Docker)
+docker run -it -p 3000:3000 -e WAHA_API_KEY=mysecret devlikeapro/waha:latest
+
+# dashboard: http://localhost:3000/dashboard → session "default" sampai Working
+
+# 2) API (port 8000)
+cd E:\GitHub\kbli-agent-mvp
+.\.venv\Scripts\Activate.ps1
+uvicorn src.api_handler:app --host 0.0.0.0 --port 8000 --reload
+
+# 3) BOT (port 8080)
+cd E:\GitHub\kbli-agent-mvp
+.\.venv\Scripts\Activate.ps1
+uvicorn src.simple_waha_bot:app --host 0.0.0.0 --port 8080 --reload
+
+WAHA → Webhook URL: 
+http://host.docker.internal:8080/waha-webhook 
+(Event: message)

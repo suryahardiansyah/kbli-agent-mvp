@@ -1,0 +1,74 @@
+{
+  "name": "WAHA Auto Reply (minimal)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "waha-incoming",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [260, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "number": [],
+          "string": [
+            {
+              "value1": "={{$json[\"payload\"][\"fromMe\"]}}",
+              "operation": "equal",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "IF",
+      "name": "IF Not From Me",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [520, 260]
+    },
+    {
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "http://localhost:3000/api/sendSeen",
+        "jsonParameters": true,
+        "options": { "headers": { "X-Api-Key": "yoursecret", "Content-Type": "application/json" } },
+        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$json.payload.from}}\"}"
+      },
+      "id": "Seen",
+      "name": "Send Seen via WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [780, 200]
+    },
+    {
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "http://localhost:3000/api/sendText",
+        "jsonParameters": true,
+        "options": { "headers": { "X-Api-Key": "yoursecret", "Content-Type": "application/json" } },
+        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$json.payload.from}}\",\"text\":\"Hi there!\"}"
+      },
+      "id": "Reply",
+      "name": "Send Reply via WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1040, 200]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "IF Not From Me", "type": "main", "index": 0 }]] },
+    "IF Not From Me": { "main": [[{ "node": "Send Seen via WAHA", "type": "main", "index": 0 }], []] },
+    "Send Seen via WAHA": { "main": [[{ "node": "Send Reply via WAHA", "type": "main", "index": 0 }]] }
+  },
+  "active": true
+}
