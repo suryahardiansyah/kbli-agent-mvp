@@ -1,1 +1,4 @@
 src/sessions/*
+sibaku_MOBILE_base/*
+.venv/*
+.gradio/*
