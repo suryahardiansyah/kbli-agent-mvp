@@ -1,157 +1,125 @@
-# KBLI Agent (Minimum Viable Product) MVP
+# KBLI WhatsApp Agent — Local Setup (WAHA + FastAPI Bot)
+
+Runs entirely on your machine:
+
+WhatsApp (phone) ⇄ WAHA (Docker, :3000) ⇄ Bot (FastAPI, :8080) ⇄ KBLI API (FastAPI, :8000)
 
 ---
 
-## Disclaimer / Penjelasan
+## 0) Prerequisites
+- Docker Desktop
+- Python 3.10+ (with a virtual environment)
+- A WhatsApp account on your phone (to scan QR in WAHA)
 
-### English
-This project, **KBLI Agent MVP**, is an independent and unofficial prototype.  
-It was created solely for educational and research purposes to explore how AI Agents can assist with business classification according to **KBLI (Klasifikasi Baku Lapangan Usaha Indonesia)**.
-
-The dataset used in this prototype was obtained from the **official SIBAKU Mobile app** developed by **Badan Pusat Statistik (BPS)**, which is publicly available for free download on Google Play Store.  
-All KBLI information in the app can also be found in official BPS publications (for example, the KBLI 2020 PDF on the Sirusa BPS website).
-
-**How the database was obtained**
-1. Download the official **SIBAKU Mobile** app from the Google Play Store  
-2. Use an **APK extractor** (for example, from your Android device) to extract the `.apk` file  
-3. Open the APK using 7zip or WinRAR  
-4. Locate the file `baku.db` included in the app’s internal data  
-5. Use the database structure locally for AI experimentation (no decryption, modification, or redistribution)
-
-This project does not provide any guarantee.  
-The owner of this repository accepts no liability for the quality, completeness, or accuracy of the data.  
-All rights to the original dataset belong to **Badan Pusat Statistik (BPS)**.
+Defaults used here:
+- WAHA_API_KEY = `mysecret`
+- WAHA Dashboard: `http://localhost:3000/dashboard`
+- KBLI API: `http://localhost:8000`
+- Bot: `http://localhost:8080`
 
 ---
 
-### Bahasa Indonesia
-Proyek ini, **KBLI Agent MVP**, merupakan prototipe independen dan tidak resmi.  
-Tujuan utamanya adalah untuk keperluan pembelajaran dan riset, yaitu mengeksplorasi bagaimana AI Agent dapat membantu pengklasifikasian usaha berdasarkan **KBLI (Klasifikasi Baku Lapangan Usaha Indonesia)**.
+## 1) Start WAHA (Docker)
 
-Dataset yang digunakan dalam prototipe ini diperoleh dari **aplikasi resmi SIBAKU Mobile** yang dikembangkan oleh **Badan Pusat Statistik (BPS)**, dan dapat diunduh secara gratis oleh publik melalui Google Play Store.  
-Seluruh informasi KBLI yang terdapat di dalam aplikasi juga tersedia dalam publikasi resmi BPS seperti **PDF KBLI 2020** di situs Sirusa BPS.
+    docker run -d --name waha --restart unless-stopped `
+      -p 3000:3000 `
+      -e WAHA_API_KEY=mysecret `
+      devlikeapro/waha:latest
 
-**Cara memperoleh database**
-1. Unduh aplikasi resmi **SIBAKU Mobile** dari Google Play Store  
-2. Gunakan **APK Extractor** (misalnya dari perangkat Android) untuk mengekstrak file `.apk`  
-3. Buka file APK menggunakan 7zip atau WinRAR  
-4. Temukan file `baku.db` di dalam folder data aplikasi  
-5. Gunakan struktur database ini secara lokal untuk eksperimen AI (tanpa dekripsi, modifikasi, atau redistribusi)
+Open: http://localhost:3000/dashboard
 
-Proyek ini tidak memberikan jaminan apa pun.  
-Pemilik repositori tidak bertanggung jawab atas kualitas, kelengkapan, atau akurasi data yang disediakan.  
-Seluruh hak atas dataset asli dimiliki oleh **Badan Pusat Statistik (BPS)**.
-
-
-## Deskripsi Singkat / Short Description
-AI Agent untuk membantu petugas atau pengguna menentukan klasifikasi **KBLI (Klasifikasi Baku Lapangan Usaha Indonesia)** berdasarkan deskripsi usaha atau pekerjaan secara alami.  
-An AI Agent designed to help field officers or users determine the appropriate **KBLI (Indonesian Standard Industrial Classification)** code based on natural business or job descriptions.  
-**Fokus awal / Initial focus:** SE2026.
+Session setup:
+- Create session `default`
+- Scan the QR with your WhatsApp
+- Wait until status shows **Working**
+- Session → Configuration:
+  - Webhook URL: `http://host.docker.internal:8080/waha-webhook`
+  - Event: `message`
+  - Webhook retry (recommended): items = 1, delay = 2s, policy = linear
 
 ---
 
-## Tujuan dan Manfaat / Goals and Benefits
+## 2) Start the KBLI API (port 8000)
 
-### Bahasa Indonesia
-- Memfasilitasi identifikasi KBLI dari teks deskriptif usaha agar lebih cepat dan akurat karena proses manual sering memakan waktu.  
-- Mendukung **Sensus Ekonomi 2026 (SE2026)** dengan menyediakan referensi lokal berbasis AI untuk membantu pengklasifikasian usaha.  
-- Menyajikan hasil rekomendasi KBLI dengan nilai presisi (confidence) dan metadata deskripsi resmi.
+    cd E:\GitHub\kbli-agent-mvp
+    .\.venv\Scripts\Activate.ps1
+    uvicorn src.api_handler:app --host 0.0.0.0 --port 8000 --reload
 
-### English
-- Facilitate faster and more accurate KBLI identification from natural-language business descriptions since manual processing is often time-consuming.  
-- Support **Economic Census 2026 (SE2026)** by providing a local AI-based reference to assist in business classification.  
-- Provide KBLI recommendations with confidence scores and official KBLI metadata.
+Quick test:
+
+    Invoke-RestMethod -Method Get -Uri "http://localhost:8000/classify?query=pengemudi%20truk"
 
 ---
 
-## Struktur Kode dan Standar KBLI 2020 / Code Structure and KBLI 2020 Standard
+## 3) Start the WAHA Bot (port 8080)
+The bot receives WAHA webhooks and replies using the KBLI API (no buttons, no follow-up—just code, title, description).
 
-### Bahasa Indonesia
-- KBLI menggunakan **5 digit angka** untuk mengklasifikasikan kegiatan usaha.  
-- Contoh kode valid: `01113` (Pertanian Kedelai).  
-- Karena ada sekitar **1.790 kode** dalam KBLI 2020, agen ini akan mencari **top-N rekomendasi** berdasarkan teks dan memberikan nilai presisi.
+    cd E:\GitHub\kbli-agent-mvp
+    .\.venv\Scripts\Activate.ps1
+    uvicorn src.simple_waha_bot:app --host 0.0.0.0 --port 8080 --reload
 
-### English
-- KBLI uses **5-digit numeric codes** to classify business activities.  
-- Example of a valid code: `01113` (Soybean Farming).  
-- Since there are about **1,790 codes** in KBLI 2020, the agent retrieves **top-N recommendations** based on text similarity and provides a precision score.
+Health check:
 
----
+    Invoke-RestMethod -Uri "http://localhost:8080/health"
 
-## Contoh Input dan Output / Example Input and Output
-
-### Input
-**ID:** Penjual pinang dari kebun sendiri lalu dijual di para-para pinggir jalan raya  
-**EN:** Seller of areca nuts from own garden, sold at roadside stalls
-
-### Output (dummy, contoh format yang diharapkan / expected format)
-
-**Presisi:** 42.5%  
-**KBLI:** 47221  
-**Judul:** Perdagangan eceran hasil pertanian di warung atau kios  
-**Deskripsi:** Kegiatan perdagangan eceran hasil pertanian (tidak diolah) melalui gerai kecil seperti kios, warung, pedagang kaki lima, dan sejenisnya.
-
-**Presisi:** 33.0%  
-**KBLI:** 01117  
-**Judul:** Pertanian biji-bijian penghasil minyak makan  
-**Deskripsi:** Kegiatan pembudidayaan tanaman biji-bijian yang menghasilkan minyak, dari pengolahan lahan, pemeliharaan, panen, dan seterusnya.
-
-**Presisi:** 24.5%  
-**KBLI:** 47910  
-**Judul:** Perdagangan eceran tanaman dan bunga di luar toko  
-**Deskripsi:** Perdagangan eceran tanaman, bunga, bibit, dan tanaman pot di luar toko seperti pedagang kaki lima atau pasar tumpah.
-
-### Catatan / Note
-Nilai presisi adalah skor internal dari model dan retrieval. Contoh di atas hanya format.  
-Kode dan deskripsi harus disesuaikan dengan **database KBLI resmi**.  
-The precision value is an internal score from the model and retrieval.  
-The example above is a format only — replace codes and descriptions with official KBLI data.
+Now send a WhatsApp message to the number linked in WAHA; you should receive a neat KBLI reply.
 
 ---
 
-## Fitur MVP yang Direncanakan / Planned MVP Features
+## 4) (Optional) Use ngrok for the KBLI API
 
-### Bahasa Indonesia
-- **Alur:** Deskripsi teks → Retrieval (semantic atau vector search) → Prompt + LLM reasoning → Rekomendasi KBLI top-3  
-- **Mode fallback:** Jika confidence di bawah ambang batas, tampilkan pesan *"Maaf, saya tidak menemukan KBLI yang sesuai."*  
-- **Antarmuka admin sederhana** untuk memperbarui database KBLI (judul dan deskripsi).  
-- **Dukungan ekspor/impor** agar dapat diterapkan di kantor daerah.
+Expose your API publicly (not required for local-only):
 
-### English
-- **Pipeline:** Text description → Retrieval (semantic or vector search) → Prompt + LLM reasoning → Top-3 KBLI recommendations  
-- **Fallback mode:** If confidence is below threshold, display *"Sorry, I could not find a suitable KBLI."*  
-- **Simple admin interface** for updating the KBLI database (title and description).  
-- **Export/import support** for regional deployment.
+    ngrok http 8000
+
+Point the bot to that URL (takes effect after restart):
+
+    setx API_CLASSIFY "https://<your-ngrok-subdomain>.ngrok-free.dev/classify"
+
+Restart the bot process to pick up `API_CLASSIFY`.
 
 ---
 
-## Struktur Direktori Awal / Suggested Directory Structure
-/
-├── README.md
-├── docs/ # metadata KBLI (JSON atau Markdown)
-├── workflows/ # exported n8n workflows (no credentials)
-├── prompts/ # system dan user prompt templates
-├── src/ # backend atau integration code
-│ ├── retriever.py
-│ ├── classifier.py
-│ └── api_handler.py
-└── tests/ # example tests for input and output
+## Quick Restart Cheat Sheet
+
+    # WAHA
+    docker restart waha
+    docker logs -f waha
+
+    # KBLI API (Ctrl+C to stop)
+    uvicorn src.api_handler:app --host 0.0.0.0 --port 8000 --reload
+
+    # Bot (Ctrl+C to stop)
+    uvicorn src.simple_waha_bot:app --host 0.0.0.0 --port 8080 --reload
 
 ---
 
-## Kriteria Selesai MVP / MVP Completion Criteria
+## Troubleshooting
 
-### Bahasa Indonesia
-- Agen mampu menghasilkan minimal **3 rekomendasi KBLI valid (5 digit)** dari input teks.  
-- Metadata (judul dan deskripsi) diambil dari **database resmi KBLI**.  
-- Confidence score ditampilkan agar pengguna tahu tingkat akurasi.  
-- Bila tidak ada hasil relevan, tampilkan pesan fallback.  
-- Pipeline retrieval dan LLM berjalan **end-to-end** dari input teks ke output JSON.
+WAHA returns 401 for /api/sendText (or others):
+- Ensure WAHA started with `-e WAHA_API_KEY=mysecret`
+- The bot includes header `X-API-Key: mysecret` on WAHA API calls
 
-### English
-- The agent must produce at least **3 valid 5-digit KBLI recommendations** from text input.  
-- Metadata (title and description) must come from the **official KBLI dataset**.  
-- Confidence score must be displayed to indicate reliability.  
-- If no relevant result is found, display a fallback message.  
-- Retrieval and LLM pipeline must work **end-to-end** from text input to JSON output.
+WAHA not hitting your bot (no incoming logs):
+- In WAHA session config, Webhook URL must be `http://host.docker.internal:8080/waha-webhook` (not `localhost`)
+- Event must include `message`
+- Session status must be **Working**; logout + re-scan QR if needed
 
+404 on `/waha-webhook`:
+- The bot must be running on port 8080
+- Both `/waha-webhook` and `/waha-webhook/` are implemented
+
+Wrong/messy message formatting:
+- The bot uses simple WhatsApp-friendly Markdown (`*bold*`, `_italic_`)
+- It formats from whatever your KBLI API returns:
+  - `final_choice.{code,title|name,desc|description}`
+  - `kbli.{code,title|name,desc|description}`
+  - flat `code/title/description`
+  - or a plain `reply` string (forwarded as-is)
+
+---
+
+## What’s Running
+- WAHA — WhatsApp session manager; relays messages to/from your bot
+- KBLI API (`src/api_handler.py`) — Classification endpoint (`GET /classify?query=…`)
+- Bot (`src.simple_waha_bot.py`) — Glue between WAHA and KBLI API; replies neatly without feedback prompts

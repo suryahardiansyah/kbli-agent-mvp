@@ -1,74 +1,199 @@
 {
-  "name": "WAHA Auto Reply (minimal)",
+  "name": "WAHA KBLI Agent (Simple, API-backed)",
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
         "path": "waha-incoming",
-        "responseMode": "onReceived",
-        "options": {}
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
       },
-      "id": "Webhook",
-      "name": "Webhook",
+      "id": "Webhook1",
+      "name": "WAHA Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [260, 260]
+      "position": [200, 300]
     },
     {
       "parameters": {
-        "conditions": {
-          "boolean": [],
-          "number": [],
+        "keepOnlySet": true,
+        "values": {
           "string": [
             {
-              "value1": "={{$json[\"payload\"][\"fromMe\"]}}",
-              "operation": "equal",
-              "value2": false
+              "name": "chatId",
+              "value": "={{ $json.payload && $json.payload.from ? $json.payload.from : ($json.body && $json.body.from ? $json.body.from : $json.from) }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.payload && ($json.payload.text || $json.payload.body) ? ($json.payload.text || $json.payload.body) : ($json.body && ($json.body.text || $json.body.body) ? ($json.body.text || $json.body.body) : ($json.text || \"\")) }}"
             }
           ]
         }
       },
-      "id": "IF",
-      "name": "IF Not From Me",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [520, 260]
+      "id": "SetExtract",
+      "name": "Extract Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [420, 300]
     },
     {
       "parameters": {
-        "authentication": "none",
-        "requestMethod": "POST",
         "url": "http://localhost:3000/api/sendSeen",
+        "method": "POST",
         "jsonParameters": true,
-        "options": { "headers": { "X-Api-Key": "yoursecret", "Content-Type": "application/json" } },
-        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$json.payload.from}}\"}"
+        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$json.chatId}}\"}",
+        "options": {
+          "headerParametersUi": {
+            "parameter": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-API-Key", "value": "mysecret" }
+            ]
+          }
+        }
       },
       "id": "Seen",
-      "name": "Send Seen via WAHA",
+      "name": "Send Seen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [780, 200]
+      "position": [420, 160]
     },
     {
       "parameters": {
-        "authentication": "none",
-        "requestMethod": "POST",
-        "url": "http://localhost:3000/api/sendText",
+        "url": "http://localhost:3000/api/startTyping",
+        "method": "POST",
         "jsonParameters": true,
-        "options": { "headers": { "X-Api-Key": "yoursecret", "Content-Type": "application/json" } },
-        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$json.payload.from}}\",\"text\":\"Hi there!\"}"
+        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$json.chatId}}\"}",
+        "options": {
+          "headerParametersUi": {
+            "parameter": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-API-Key", "value": "mysecret" }
+            ]
+          }
+        }
       },
-      "id": "Reply",
+      "id": "TypingStart",
+      "name": "Start Typing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [620, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://rude-lonelily-benito.ngrok-free.dev/webhook/whatsapp",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={\"text\":\"{{$json.text}}\"}",
+        "options": {
+          "headerParametersUi": {
+            "parameter": [
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "KBLIAPI",
+      "name": "BPS KBLI API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 300]
+    },
+    {
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ Math.floor(Math.random() * 8) + 3 }}"
+      },
+      "id": "Wait",
+      "name": "Wait Random",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1040, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/stopTyping",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={\"session\":\"default\",\"chatId\":\"{{$node[\"Extract Fields\"].json.chatId}}\"}",
+        "options": {
+          "headerParametersUi": {
+            "parameter": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-API-Key", "value": "mysecret" }
+            ]
+          }
+        }
+      },
+      "id": "TypingStop",
+      "name": "Stop Typing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/sendText",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={\n  \"session\":\"default\",\n  \"chatId\":\"{{$node[\\\"Extract Fields\\\"].json.chatId}}\",\n  \"text\": {{$node[\"BPS KBLI API\"].json.reply ? $json[\"reply\"] : (\"'Maaf, API tidak merespon.'\")}}\n}",
+        "options": {
+          "headerParametersUi": {
+            "parameter": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-API-Key", "value": "mysecret" }
+            ]
+          }
+        }
+      },
+      "id": "SendReply",
       "name": "Send Reply via WAHA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1040, 200]
+      "position": [1440, 300]
     }
   ],
   "connections": {
-    "Webhook": { "main": [[{ "node": "IF Not From Me", "type": "main", "index": 0 }]] },
-    "IF Not From Me": { "main": [[{ "node": "Send Seen via WAHA", "type": "main", "index": 0 }], []] },
-    "Send Seen via WAHA": { "main": [[{ "node": "Send Reply via WAHA", "type": "main", "index": 0 }]] }
-  },
-  "active": true
+    "WAHA Trigger": {
+      "main": [
+        [
+          { "node": "Extract Fields", "type": "main", "index": 0 },
+          { "node": "Send Seen", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract Fields": {
+      "main": [
+        [
+          { "node": "Start Typing", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Start Typing": {
+      "main": [
+        [
+          { "node": "BPS KBLI API", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "BPS KBLI API": {
+      "main": [
+        [
+          { "node": "Wait Random", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Wait Random": {
+      "main": [
+        [
+          { "node": "Stop Typing", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Stop Typing": {
+      "main": [
+        [
+          { "node": "Send Reply via WAHA", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
 }
